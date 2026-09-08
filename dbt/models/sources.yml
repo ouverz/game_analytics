@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: events
+      - name: installs
+      - name: funnel_steps
+      - name: rejected_records
+  - name: meta
+    schema: meta
+    tables:
+      - name: source_batches
+      - name: ingestion_runs

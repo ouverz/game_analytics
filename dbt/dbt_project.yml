@@ -1,0 +1,29 @@
+name: game_analytics
+version: 1.0.0
+config-version: 2
+
+profile: game_analytics
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+target-path: target
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  launch_window_start: "2026-06-09T00:00:00Z"
+  launch_window_end: "2026-06-23T00:00:00Z"
+
+models:
+  game_analytics:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    quality:
+      +materialized: table
+
+seeds:
+  game_analytics:
+    +schema: analytics_seed
+    +quote_columns: false

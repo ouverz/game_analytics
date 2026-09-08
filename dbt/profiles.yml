@@ -1,0 +1,10 @@
+game_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ var('analytics_database', 'data/analytics.duckdb') }}"
+      schema: analytics
+      threads: 4
+      settings:
+        TimeZone: UTC

@@ -1,0 +1,38 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Local analytical state and sensitive rejects
+data/
+*.duckdb
+*.duckdb.wal
+
+# Supplied user-level source data (obtain separately from the assignment)
+events.jsonl
+installs.csv
+
+# Local Superset credentials
+superset/.env
+
+# dbt generated artifacts
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+dbt/.user.yml
+
+# Test/tool caches
+.pytest_cache/
+.ruff_cache/
+
+# Local agent instructions and obsolete working screenshots
+AGENTS.md
+images/
+Screenshot*.png
+charts_dashboards.png

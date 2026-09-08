@@ -1,0 +1,29 @@
+event_name,logical_step_key,funnel_section,event_role,outcome_value,applicability,funnel_scope,is_primary_endpoint,is_explicit_failure,primary_step_order,primary_step_name,branch_order,branch_name
+INIT_CLIENT_START,client_start,startup,milestone,,all,primary_loading,false,false,1,Client start,,
+INIT_CONFIG_LOADED,config_loaded,startup,milestone,,all,primary_loading,false,false,2,Config loaded,,
+INIT_LOCALIZATION_START,localization,startup,start,,all,primary_loading,false,false,,,,
+INIT_LOCALIZATION_END,localization,startup,end,,all,primary_loading,false,false,3,Localization complete,,
+INIT_UPDATE_MAINTENANCE_CHECK,maintenance_check,maintenance,check,,all,primary_loading,false,false,4,Maintenance check,,
+INIT_UPDATE_MAINTENANCE_BLOCKED,maintenance_check,maintenance,outcome,blocked,all,primary_loading,false,true,,,1,Maintenance blocked
+INIT_ASSET_PATCH_START,asset_patch,patching,start,,all,primary_loading,false,false,,,,
+INIT_ASSET_PATCH_SIZE_ACCEPTED,asset_patch_consent,patching,outcome,accepted,all,primary_loading,false,false,,,,
+INIT_ASSET_PATCH_SIZE_DECLINED,asset_patch_consent,patching,outcome,declined,all,primary_loading,false,false,,,2,Patch declined
+INIT_ASSET_PATCH_FAILED,asset_patch,patching,outcome,failed,all,primary_loading,false,true,,,3,Patch failed
+INIT_ASSET_PATCH_END,asset_patch,patching,end,,all,primary_loading,false,false,,,,
+INIT_DATA_MODEL_LOAD_START,data_model_load,data_loading,start,,all,primary_loading,false,false,5,Data load started,,
+INIT_DATA_MODEL_LOAD_FAILED,data_model_load,data_loading,outcome,failed,all,primary_loading,false,true,,,4,Data load failed
+INIT_DATA_MODEL_LOAD_END,data_model_load,data_loading,end,,all,primary_loading,false,false,6,Data load complete,,
+INIT_READY_TO_START,ready_to_start,game_entry,milestone,,all,primary_loading,false,false,7,Ready to start,,
+INIT_PRIVACY_POLICY_DIALOGUE_SHOWN,privacy_policy,consent,prompt,,all,primary_loading,false,false,,,,
+INIT_PRIVACY_POLICY_DIALOGUE_ACCEPTED,privacy_policy,consent,outcome,accepted,all,primary_loading,false,false,,,,
+INIT_PRIVACY_POLICY_DIALOGUE_DECLINED,privacy_policy,consent,outcome,declined,all,primary_loading,false,false,,,5,Privacy declined
+APPLE_TRACKING_CONSENT_DIALOG_REQUESTED,apple_tracking,consent,prompt,,ios,primary_loading,false,false,,,,
+APPLE_TRACKING_STATUS_AUTHORIZED,apple_tracking,consent,outcome,authorized,ios,primary_loading,false,false,,,,
+APPLE_TRACKING_STATUS_DENIED,apple_tracking,consent,outcome,denied,ios,primary_loading,false,false,,,6,Tracking denied (iOS)
+INIT_PLAYER_LOGIN_START,player_login,game_entry,start,,all,primary_loading,false,false,8,Login started,,
+INIT_PLAYER_LOGIN_END,player_login,game_entry,end,,all,primary_loading,false,false,9,Login complete,,
+INIT_GAME_JOINED,game_joined,game_entry,milestone,,all,primary_loading,true,false,10,Game joined,,
+INIT_NOTIFICATIONS_START,notifications,post_entry,start,,all,post_entry,false,false,,,,
+INIT_NOTIFICATIONS_END,notifications,post_entry,end,,all,post_entry,false,false,,,,
+INIT_PAYMENT_SERVICE_START,payment_service,post_entry,start,,all,post_entry,false,false,,,,
+INIT_PAYMENT_SERVICE_END,payment_service,post_entry,end,,all,post_entry,false,false,,,,

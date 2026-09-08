@@ -1,0 +1,371 @@
+version: 2
+
+models:
+  - name: stg_events
+    description: All structurally valid event rows with raw values, normalizations, and eligibility flags.
+    columns:
+      - name: source_batch_id
+        data_tests: [not_null]
+      - name: source_line
+        data_tests: [not_null]
+      - name: raw_line_hash
+        data_tests: [not_null]
+
+  - name: stg_installs
+    columns:
+      - name: source_batch_id
+        data_tests: [not_null]
+      - name: source_line
+        data_tests: [not_null]
+
+  - name: stg_funnel_steps
+    description: Source-faithful loading funnel map supplied by the product team.
+    columns:
+      - name: source_sequence
+        data_tests: [not_null]
+      - name: event_name
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('funnel_event_semantics')
+                field: event_name
+
+  - name: int_funnel_steps
+    description: Canonical join of the supplied product funnel and governed analytical semantics.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: source_batch_id, data_type: varchar, data_tests: [not_null]}
+      - {name: source_sequence, data_type: bigint, data_tests: [not_null]}
+      - {name: source_step_code, data_type: varchar, data_tests: [not_null]}
+      - {name: stage_number, data_type: integer, data_tests: [not_null]}
+      - {name: variant_code, data_type: varchar}
+      - {name: event_name, data_type: varchar, data_tests: [not_null]}
+      - {name: logical_step_key, data_type: varchar, data_tests: [not_null]}
+      - {name: funnel_section, data_type: varchar, data_tests: [not_null]}
+      - {name: event_role, data_type: varchar, data_tests: [not_null]}
+      - {name: outcome_value, data_type: varchar}
+      - {name: applicability, data_type: varchar, data_tests: [not_null]}
+      - {name: funnel_scope, data_type: varchar, data_tests: [not_null]}
+      - {name: is_primary_endpoint, data_type: boolean, data_tests: [not_null]}
+      - {name: is_explicit_failure, data_type: boolean, data_tests: [not_null]}
+      - {name: primary_step_order, data_type: integer}
+      - {name: primary_step_name, data_type: varchar}
+      - {name: branch_order, data_type: integer}
+      - {name: branch_name, data_type: varchar}
+      - {name: is_primary_step, data_type: boolean, data_tests: [not_null]}
+      - {name: is_funnel_start, data_type: boolean, data_tests: [not_null]}
+      - {name: is_funnel_end, data_type: boolean, data_tests: [not_null]}
+
+  - name: int_events_enriched
+    columns:
+      - name: source_batch_id
+        data_tests: [not_null]
+
+  - name: int_installs
+    description: Deduplicated install entity between source-faithful staging and the public dimension.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: source_batch_id, data_type: varchar, data_tests: [not_null]}
+      - {name: user_id, data_type: bigint, data_tests: [not_null]}
+      - {name: install_date, data_type: date, data_tests: [not_null]}
+      - {name: platform, data_type: varchar, data_tests: [not_null]}
+      - {name: install_source, data_type: varchar, data_tests: [not_null]}
+      - {name: country, data_type: varchar, data_tests: [not_null]}
+
+  - name: int_loading_session_steps
+    description: Sole implementation of sequential primary-funnel qualification at session-step grain.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: source_batch_id, data_type: varchar, data_tests: [not_null]}
+      - {name: user_key, data_type: varchar, data_tests: [not_null]}
+      - {name: session_key, data_type: varchar, data_tests: [not_null]}
+      - {name: step_order, data_type: integer, data_tests: [not_null]}
+      - {name: step_name, data_type: varchar, data_tests: [not_null]}
+      - {name: event_name, data_type: varchar, data_tests: [not_null]}
+      - {name: is_funnel_start, data_type: boolean, data_tests: [not_null]}
+      - {name: is_funnel_end, data_type: boolean, data_tests: [not_null]}
+      - {name: step_at, data_type: timestamp with time zone}
+      - {name: reached_step, data_type: boolean, data_tests: [not_null]}
+      - {name: reached_session_count, data_type: integer, data_tests: [not_null]}
+
+  - name: dim_funnel_steps
+    description: Governed funnel-step dimension exposed to facts and lineage consumers.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: source_batch_id, data_type: varchar, data_tests: [not_null]}
+      - {name: source_sequence, data_type: bigint, data_tests: [not_null]}
+      - {name: source_step_code, data_type: varchar, data_tests: [not_null]}
+      - {name: stage_number, data_type: integer, data_tests: [not_null]}
+      - {name: variant_code, data_type: varchar}
+      - {name: event_name, data_type: varchar, data_tests: [not_null, unique]}
+      - {name: logical_step_key, data_type: varchar, data_tests: [not_null]}
+      - {name: funnel_section, data_type: varchar, data_tests: [not_null]}
+      - {name: event_role, data_type: varchar, data_tests: [not_null]}
+      - {name: outcome_value, data_type: varchar}
+      - {name: applicability, data_type: varchar, data_tests: [not_null]}
+      - {name: funnel_scope, data_type: varchar, data_tests: [not_null]}
+      - {name: is_primary_endpoint, data_type: boolean, data_tests: [not_null]}
+      - {name: is_explicit_failure, data_type: boolean, data_tests: [not_null]}
+      - {name: primary_step_order, data_type: integer}
+      - {name: primary_step_name, data_type: varchar}
+      - {name: branch_order, data_type: integer}
+      - {name: branch_name, data_type: varchar}
+      - {name: is_primary_step, data_type: boolean, data_tests: [not_null]}
+      - {name: is_funnel_start, data_type: boolean, data_tests: [not_null]}
+      - {name: is_funnel_end, data_type: boolean, data_tests: [not_null]}
+
+  - name: dim_installs
+    description: One pseudonymized install row per promoted source batch and user.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: source_batch_id, data_type: varchar, data_tests: [not_null]}
+      - {name: user_key, data_type: varchar, data_tests: [not_null]}
+      - {name: install_date, data_type: date, data_tests: [not_null]}
+      - {name: platform, data_type: varchar, data_tests: [not_null]}
+      - {name: install_source, data_type: varchar, data_tests: [not_null]}
+      - {name: country, data_type: varchar, data_tests: [not_null]}
+
+  - name: fct_loading_session_steps
+    description: One row per eligible session and governed primary step; the sole sequential-funnel evaluation.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: source_batch_id, data_type: varchar, data_tests: [not_null]}
+      - {name: user_key, data_type: varchar, data_tests: [not_null]}
+      - {name: session_key, data_type: varchar, data_tests: [not_null]}
+      - {name: step_order, data_type: integer, data_tests: [not_null]}
+      - {name: step_name, data_type: varchar, data_tests: [not_null]}
+      - {name: event_name, data_type: varchar, data_tests: [not_null]}
+      - {name: is_funnel_start, data_type: boolean, data_tests: [not_null]}
+      - {name: is_funnel_end, data_type: boolean, data_tests: [not_null]}
+      - {name: step_at, data_type: timestamp with time zone}
+      - {name: reached_step, data_type: boolean, data_tests: [not_null]}
+      - {name: reached_session_count, data_type: integer, data_tests: [not_null]}
+
+  - name: fct_loading_sessions
+    description: One pseudonymized row per eligible session; metric eligibility flags are defined once at this grain.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: source_batch_id, data_type: varchar, data_tests: [not_null]}
+      - {name: user_key, data_type: varchar, data_tests: [not_null]}
+      - {name: session_key, data_type: varchar, data_tests: [not_null, unique]}
+      - {name: platform, data_type: varchar}
+      - {name: client_version, data_type: varchar}
+      - {name: install_source, data_type: varchar}
+      - {name: country, data_type: varchar}
+      - {name: is_first_session, data_type: boolean}
+      - {name: eligible_for_install_segmentation, data_type: boolean, data_tests: [not_null]}
+      - {name: session_has_time_reversal, data_type: boolean, data_tests: [not_null]}
+      - {name: client_start_at, data_type: timestamp with time zone}
+      - {name: game_joined_at, data_type: timestamp with time zone}
+      - {name: reached_client_start, data_type: boolean, data_tests: [not_null]}
+      - {name: reached_game_joined, data_type: boolean, data_tests: [not_null]}
+      - {name: started_session_count, data_type: integer, data_tests: [not_null]}
+      - {name: joined_session_count, data_type: integer, data_tests: [not_null]}
+      - {name: eligible_for_loading_time, data_type: boolean, data_tests: [not_null]}
+      - {name: loading_time_ms, data_type: bigint}
+      - {name: timed_session_count, data_type: integer, data_tests: [not_null]}
+
+  - name: fct_battle_starts
+    description: One pseudonymized row per eligible battle-start event.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: source_batch_id, data_type: varchar, data_tests: [not_null]}
+      - {name: battle_key, data_type: varchar, data_tests: [not_null, unique]}
+      - {name: user_key, data_type: varchar, data_tests: [not_null]}
+      - {name: session_key, data_type: varchar, data_tests: [not_null]}
+      - {name: battle_started_at, data_type: timestamp with time zone, data_tests: [not_null]}
+
+  - name: fct_loading_branch_events
+    description: One row per observed governed branch outcome in a loading session.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: source_batch_id, data_type: varchar, data_tests: [not_null]}
+      - {name: user_key, data_type: varchar, data_tests: [not_null]}
+      - {name: session_key, data_type: varchar, data_tests: [not_null]}
+      - {name: branch_order, data_type: integer, data_tests: [not_null]}
+      - {name: branch_name, data_type: varchar, data_tests: [not_null]}
+      - {name: outcome_at, data_type: timestamp with time zone, data_tests: [not_null]}
+
+  - name: mart_loading_performance
+    description: Sole physical calculation of loading counts, conversion, and duration metrics across supported grains.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: aggregation_level, data_type: varchar, data_tests: [not_null]}
+      - {name: platform, data_type: varchar}
+      - {name: client_version, data_type: varchar}
+      - {name: metric_date, data_type: date, data_tests: [not_null]}
+      - {name: started_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: joined_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: conversion_rate, data_type: double, data_tests: [not_null]}
+      - {name: timed_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: median_loading_seconds, data_type: double, data_tests: [not_null]}
+      - {name: p90_loading_seconds, data_type: double, data_tests: [not_null]}
+
+  - name: mart_launch_summary
+    description: Consumer contract projecting the governed overall loading metrics without recalculation.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: started_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: joined_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: conversion_rate, data_type: double, data_tests: [not_null]}
+      - {name: timed_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: median_loading_seconds, data_type: double, data_tests: [not_null]}
+      - {name: p90_loading_seconds, data_type: double, data_tests: [not_null]}
+
+  - name: mart_primary_funnel
+    description: Governed funnel counts and conversion rates derived only from the session-step fact.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: step_order, data_type: integer, data_tests: [not_null, unique]}
+      - {name: step_name, data_type: varchar, data_tests: [not_null, unique]}
+      - {name: metric_date, data_type: date, data_tests: [not_null]}
+      - {name: sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: users, data_type: bigint, data_tests: [not_null]}
+      - {name: drop_off_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: step_conversion_rate, data_type: double, data_tests: [not_null]}
+      - {name: start_conversion_rate, data_type: double, data_tests: [not_null]}
+
+  - name: mart_branch_outcomes
+    description: Branch diagnostics whose membership and labels come from the governed funnel dimension.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: branch_order, data_type: integer, data_tests: [not_null, unique]}
+      - {name: branch_outcome, data_type: varchar, data_tests: [not_null]}
+      - {name: observed_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: continued_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: continuation_rate, data_type: double, data_tests: [not_null]}
+
+  - name: mart_segment_performance
+    description: Consumer contract projecting governed platform/version metrics without recalculation.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - {name: platform, data_type: varchar, data_tests: [not_null]}
+      - {name: client_version, data_type: varchar, data_tests: [not_null]}
+      - {name: started_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: joined_sessions, data_type: bigint, data_tests: [not_null]}
+      - {name: conversion_rate, data_type: double, data_tests: [not_null]}
+      - {name: median_loading_seconds, data_type: double, data_tests: [not_null]}
+      - {name: p90_loading_seconds, data_type: double, data_tests: [not_null]}
+
+  - name: mart_ftue_summary
+    description: Canonical first-session KPIs plus exact-day D1 retention at overall and platform/client-version grains.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: aggregation_level
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments: {values: [overall, platform_version]}
+      - {name: platform, data_type: varchar}
+      - {name: client_version, data_type: varchar}
+      - {name: eligible_new_players, data_type: bigint}
+      - {name: first_session_game_entries, data_type: bigint}
+      - {name: first_session_game_entry_rate, data_type: double}
+      - {name: first_session_activations, data_type: bigint}
+      - {name: first_session_activation_rate, data_type: double}
+      - {name: activation_rate_among_game_entries, data_type: double}
+      - {name: median_time_to_first_battle_minutes, data_type: double}
+      - {name: p90_time_to_first_battle_minutes, data_type: double}
+      - {name: activation_timing_sample_size, data_type: bigint}
+      - {name: d1_mature_installs, data_type: bigint, data_tests: [not_null]}
+      - {name: d1_returned_players, data_type: bigint, data_tests: [not_null]}
+      - {name: d1_retention_rate, data_type: double, data_tests: [not_null]}
+
+  - name: metricflow_time_spine
+    description: Daily UTC-aligned time spine for governed loading metrics.
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        granularity: day
+        data_tests: [not_null, unique]
+
+  - name: dq_issues
+    columns:
+      - name: issue_code
+        data_tests: [not_null]
+      - name: severity
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [warning, error]
+
+seeds:
+  - name: funnel_event_semantics
+    description: Analytics-owned semantic annotations joined to the product-owned ordered funnel seed.
+    columns:
+      - name: event_name
+        data_tests: [not_null, unique]
+      - name: funnel_scope
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [primary_loading, post_entry]
+      - name: applicability
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [all, ios]
+      - name: primary_step_order
+        data_tests: [unique]
+      - name: branch_order
+        data_tests: [unique]
+
+exposures:
+  - name: technical_launch_loading_funnel
+    label: Technical Launch · Loading Funnel
+    type: dashboard
+    maturity: high
+    url: http://localhost:8088/superset/dashboard/technical-launch-loading-funnel/
+    description: Superset loading-funnel dashboard backed by governed analytical marts.
+    depends_on:
+      - ref('mart_launch_summary')
+      - ref('mart_primary_funnel')
+      - ref('mart_branch_outcomes')
+      - ref('mart_segment_performance')
+    owner:
+      name: Analytics Engineering
+
+  - name: technical_launch_ftue
+    label: Technical Launch · FTUE
+    type: dashboard
+    maturity: high
+    url: http://localhost:8088/superset/dashboard/technical-launch-ftue/
+    description: Superset FTUE dashboard backed by the governed FTUE mart.
+    depends_on:
+      - ref('mart_ftue_summary')
+    owner:
+      name: Analytics Engineering

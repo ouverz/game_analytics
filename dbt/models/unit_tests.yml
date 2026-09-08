@@ -1,0 +1,34 @@
+version: 2
+
+unit_tests:
+  - name: canonical_funnel_marks_first_and_last_primary_steps
+    model: int_funnel_steps
+    given:
+      - input: ref('stg_funnel_steps')
+        rows:
+          - {source_batch_id: batch, source_sequence: 1, source_step_code: '1', stage_number: 1, variant_code: null, event_name: START}
+          - {source_batch_id: batch, source_sequence: 2, source_step_code: '2', stage_number: 2, variant_code: null, event_name: END}
+      - input: ref('funnel_event_semantics')
+        rows:
+          - {event_name: START, logical_step_key: start, funnel_section: startup, event_role: milestone, outcome_value: null, applicability: all, funnel_scope: primary_loading, is_primary_endpoint: false, is_explicit_failure: false, primary_step_order: 1, primary_step_name: Start, branch_order: null, branch_name: null}
+          - {event_name: END, logical_step_key: end, funnel_section: entry, event_role: milestone, outcome_value: null, applicability: all, funnel_scope: primary_loading, is_primary_endpoint: true, is_explicit_failure: false, primary_step_order: 2, primary_step_name: End, branch_order: null, branch_name: null}
+    expect:
+      rows:
+        - {event_name: START, is_primary_step: true, is_funnel_start: true, is_funnel_end: false}
+        - {event_name: END, is_primary_step: true, is_funnel_start: false, is_funnel_end: true}
+
+  - name: session_step_funnel_stops_after_out_of_order_event
+    model: int_loading_session_steps
+    given:
+      - input: ref('int_events_enriched')
+        rows:
+          - {source_batch_id: batch, user_id: 1, session_id: session-1, event_name: START, event_timestamp_utc: '2026-06-09 10:00:00+00', eligible_for_funnel: true}
+          - {source_batch_id: batch, user_id: 1, session_id: session-1, event_name: END, event_timestamp_utc: '2026-06-09 09:59:00+00', eligible_for_funnel: true}
+      - input: ref('int_funnel_steps')
+        rows:
+          - {source_batch_id: batch, event_name: START, primary_step_order: 1, primary_step_name: Start, is_primary_step: true, is_funnel_start: true, is_funnel_end: false}
+          - {source_batch_id: batch, event_name: END, primary_step_order: 2, primary_step_name: End, is_primary_step: true, is_funnel_start: false, is_funnel_end: true}
+    expect:
+      rows:
+        - {step_order: 1, reached_step: true, reached_session_count: 1}
+        - {step_order: 2, reached_step: false, reached_session_count: 0}

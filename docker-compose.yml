@@ -1,0 +1,40 @@
+name: assignment-superset
+
+services:
+  superset:
+    build:
+      context: .
+      dockerfile: superset/Dockerfile
+    container_name: ${SUPERSET_CONTAINER_NAME:-assignment-superset}
+    env_file:
+      - superset/.env
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+    ports:
+      - "127.0.0.1:${SUPERSET_PORT:-8088}:8088"
+    volumes:
+      - superset_home:/app/superset_home
+      - ./data:/app/data:ro
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+    command:
+      - /bin/sh
+      - -c
+      - >
+        superset db upgrade &&
+        (superset fab create-admin --username "$$SUPERSET_ADMIN_USERNAME"
+        --firstname Local --lastname Admin --email "$$SUPERSET_ADMIN_EMAIL"
+        --password "$$SUPERSET_ADMIN_PASSWORD" || true) &&
+        superset init &&
+        exec gunicorn --bind 0.0.0.0:8088 --workers 2
+        --worker-class gthread --threads 4 --timeout 120
+        "superset.app:create_app()"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8088/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    restart: unless-stopped
+
+volumes:
+  superset_home:

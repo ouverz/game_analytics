@@ -1,0 +1,96 @@
+version: 2
+
+# Each measure retrieves an already-calculated value from a governed mart. MAX
+# is deliberately non-additive and does not reproduce business calculations.
+semantic_models:
+  - name: loading_performance
+    description: Semantic access to the single physical definition of loading KPIs.
+    model: ref('mart_loading_performance')
+    defaults:
+      agg_time_dimension: metric_date
+    entities:
+      - name: loading_performance_row
+        type: primary
+        expr: aggregation_level || ':' || coalesce(platform, 'all') || ':' || coalesce(client_version, 'all')
+    dimensions:
+      - name: metric_date
+        type: time
+        type_params: {time_granularity: day}
+      - {name: aggregation_level, type: categorical}
+      - {name: platform, type: categorical}
+      - {name: client_version, type: categorical}
+    measures:
+      - {name: published_started_sessions, agg: max, expr: started_sessions}
+      - {name: published_joined_sessions, agg: max, expr: joined_sessions}
+      - {name: published_conversion_rate, agg: max, expr: conversion_rate}
+      - {name: published_timed_sessions, agg: max, expr: timed_sessions}
+      - {name: published_median_loading_seconds, agg: max, expr: median_loading_seconds}
+      - {name: published_p90_loading_seconds, agg: max, expr: p90_loading_seconds}
+
+  - name: primary_funnel_performance
+    description: Semantic access to the governed primary-funnel mart.
+    model: ref('mart_primary_funnel')
+    defaults:
+      agg_time_dimension: metric_date
+    entities:
+      - name: primary_funnel_step
+        type: primary
+        expr: step_order
+    dimensions:
+      - name: metric_date
+        type: time
+        type_params: {time_granularity: day}
+      - {name: step_order, type: categorical}
+      - {name: step_name, type: categorical}
+    measures:
+      - {name: published_funnel_sessions, agg: max, expr: sessions}
+      - {name: published_funnel_users, agg: max, expr: users}
+      - {name: published_drop_off_sessions, agg: max, expr: drop_off_sessions}
+      - {name: published_step_conversion_rate, agg: max, expr: step_conversion_rate}
+      - {name: published_start_conversion_rate, agg: max, expr: start_conversion_rate}
+
+metrics:
+  - name: loading_started_sessions
+    label: Loading started sessions
+    type: simple
+    type_params: {measure: published_started_sessions}
+  - name: loading_joined_sessions
+    label: Loading joined sessions
+    type: simple
+    type_params: {measure: published_joined_sessions}
+  - name: loading_conversion_rate
+    label: Loading conversion rate
+    type: simple
+    type_params: {measure: published_conversion_rate}
+  - name: loading_timed_sessions
+    label: Loading timed sessions
+    type: simple
+    type_params: {measure: published_timed_sessions}
+  - name: loading_median_seconds
+    label: Median loading seconds
+    type: simple
+    type_params: {measure: published_median_loading_seconds}
+  - name: loading_p90_seconds
+    label: P90 loading seconds
+    type: simple
+    type_params: {measure: published_p90_loading_seconds}
+  - name: primary_funnel_reached_sessions
+    label: Primary funnel reached sessions
+    type: simple
+    type_params: {measure: published_funnel_sessions}
+  - name: primary_funnel_reached_users
+    label: Primary funnel reached users
+    type: simple
+    type_params: {measure: published_funnel_users}
+  - name: primary_funnel_drop_off_sessions
+    label: Primary funnel drop-off sessions
+    type: simple
+    type_params: {measure: published_drop_off_sessions}
+  - name: primary_funnel_step_conversion_rate
+    label: Primary funnel step conversion rate
+    type: simple
+    type_params: {measure: published_step_conversion_rate}
+  - name: primary_funnel_start_conversion_rate
+    label: Primary funnel start conversion rate
+    type: simple
+    type_params: {measure: published_start_conversion_rate}

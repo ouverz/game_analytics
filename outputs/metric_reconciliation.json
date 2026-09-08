@@ -1,0 +1,199 @@
+{
+  "quality": {
+    "physical_event_rows": 18479,
+    "valid_json_objects": 18476,
+    "malformed_rows": 3,
+    "later_exact_duplicate_rows": 70,
+    "out_of_window_rows": 6,
+    "metric_eligible_rows": 18400
+  },
+  "headline": {
+    "started_sessions": 621,
+    "joined_sessions": 577,
+    "conversion_rate": 0.929147,
+    "timed_sessions": 556,
+    "median_loading_seconds": 105.43,
+    "p90_loading_seconds": 156.22,
+    "p95_loading_seconds": 191.87
+  },
+  "primary_funnel": [
+    {
+      "step": "client_start",
+      "sessions": 621,
+      "drop_off_sessions": 0,
+      "step_conversion_rate": 1.0,
+      "start_conversion_rate": 1.0
+    },
+    {
+      "step": "config_loaded",
+      "sessions": 621,
+      "drop_off_sessions": 0,
+      "step_conversion_rate": 1.0,
+      "start_conversion_rate": 1.0
+    },
+    {
+      "step": "localization_complete",
+      "sessions": 621,
+      "drop_off_sessions": 0,
+      "step_conversion_rate": 1.0,
+      "start_conversion_rate": 1.0
+    },
+    {
+      "step": "maintenance_check",
+      "sessions": 621,
+      "drop_off_sessions": 0,
+      "step_conversion_rate": 1.0,
+      "start_conversion_rate": 1.0
+    },
+    {
+      "step": "data_load_started",
+      "sessions": 589,
+      "drop_off_sessions": 32,
+      "step_conversion_rate": 0.94847,
+      "start_conversion_rate": 0.94847
+    },
+    {
+      "step": "data_load_complete",
+      "sessions": 578,
+      "drop_off_sessions": 11,
+      "step_conversion_rate": 0.981324,
+      "start_conversion_rate": 0.930757
+    },
+    {
+      "step": "ready_to_start",
+      "sessions": 578,
+      "drop_off_sessions": 0,
+      "step_conversion_rate": 1.0,
+      "start_conversion_rate": 0.930757
+    },
+    {
+      "step": "login_started",
+      "sessions": 577,
+      "drop_off_sessions": 1,
+      "step_conversion_rate": 0.99827,
+      "start_conversion_rate": 0.929147
+    },
+    {
+      "step": "login_complete",
+      "sessions": 577,
+      "drop_off_sessions": 0,
+      "step_conversion_rate": 1.0,
+      "start_conversion_rate": 0.929147
+    },
+    {
+      "step": "game_joined",
+      "sessions": 577,
+      "drop_off_sessions": 0,
+      "step_conversion_rate": 1.0,
+      "start_conversion_rate": 0.929147
+    }
+  ],
+  "conditional_outcomes": [
+    {
+      "outcome": "maintenance_blocked",
+      "observed_sessions": 11,
+      "continued_sessions": 0,
+      "continuation_rate": 0.0
+    },
+    {
+      "outcome": "patch_declined",
+      "observed_sessions": 16,
+      "continued_sessions": 8,
+      "continuation_rate": 0.5
+    },
+    {
+      "outcome": "patch_failed",
+      "observed_sessions": 3,
+      "continued_sessions": 0,
+      "continuation_rate": 0.0
+    },
+    {
+      "outcome": "data_load_failed",
+      "observed_sessions": 10,
+      "continued_sessions": 0,
+      "continuation_rate": 0.0
+    },
+    {
+      "outcome": "privacy_declined",
+      "observed_sessions": 63,
+      "continued_sessions": 63,
+      "continuation_rate": 1.0
+    },
+    {
+      "outcome": "tracking_denied_ios",
+      "observed_sessions": 54,
+      "continued_sessions": 54,
+      "continuation_rate": 1.0
+    }
+  ],
+  "platform_version_segments": [
+    {
+      "platform": "Android",
+      "client_version": "1.0.2",
+      "started_sessions": 211,
+      "joined_sessions": 201,
+      "conversion_rate": 0.952607,
+      "median_loading_seconds": 95.74,
+      "p90_loading_seconds": 134.03
+    },
+    {
+      "platform": "Android",
+      "client_version": "1.0.3",
+      "started_sessions": 81,
+      "joined_sessions": 75,
+      "conversion_rate": 0.925926,
+      "median_loading_seconds": 105.94,
+      "p90_loading_seconds": 176.53
+    },
+    {
+      "platform": "Android",
+      "client_version": "1.0.4",
+      "started_sessions": 163,
+      "joined_sessions": 153,
+      "conversion_rate": 0.93865,
+      "median_loading_seconds": 112.98,
+      "p90_loading_seconds": 176.52
+    },
+    {
+      "platform": "iOS",
+      "client_version": "1.0.2",
+      "started_sessions": 23,
+      "joined_sessions": 19,
+      "conversion_rate": 0.826087,
+      "median_loading_seconds": 111.94,
+      "p90_loading_seconds": 180.77
+    },
+    {
+      "platform": "iOS",
+      "client_version": "1.0.3",
+      "started_sessions": 67,
+      "joined_sessions": 61,
+      "conversion_rate": 0.910448,
+      "median_loading_seconds": 111.18,
+      "p90_loading_seconds": 173.85
+    },
+    {
+      "platform": "iOS",
+      "client_version": "1.0.4",
+      "started_sessions": 75,
+      "joined_sessions": 67,
+      "conversion_rate": 0.893333,
+      "median_loading_seconds": 110.5,
+      "p90_loading_seconds": 180.26
+    }
+  ],
+  "ftue_kpis": {
+    "eligible_new_players": 101,
+    "first_session_game_entries": 86,
+    "first_session_game_entry_rate": 0.851485,
+    "first_session_activations": 43,
+    "first_session_activation_rate": 0.425743,
+    "activation_rate_among_game_entries": 0.5,
+    "median_time_to_first_battle_seconds": 606.58,
+    "p90_time_to_first_battle_seconds": 1380.87,
+    "activation_timing_sample_size": 43,
+    "d1_mature_installs": 93,
+    "d1_returned_players": 45,
+    "d1_retention_rate": 0.483871
+  }
+}

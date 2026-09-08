@@ -1,0 +1,23 @@
+select
+    source_batch_id,
+    source_sequence,
+    source_step_code,
+    stage_number,
+    variant_code,
+    event_name,
+    logical_step_key,
+    funnel_section,
+    event_role,
+    outcome_value,
+    applicability,
+    funnel_scope,
+    is_primary_endpoint,
+    is_explicit_failure,
+    primary_step_order,
+    primary_step_name,
+    branch_order,
+    branch_name,
+    is_primary_step,
+    is_funnel_start,
+    is_funnel_end
+from {{ ref('int_funnel_steps') }}
