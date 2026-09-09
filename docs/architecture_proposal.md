@@ -28,16 +28,37 @@ flowchart LR
 
 The main choices and reasons are:
 
-- **S3** keeps the original files as a recoverable audit trail and provides
-  low-cost storage at both pre-launch and production volumes.
-- **EventBridge** acts as the trigger when a delivery arrives; **Step Functions**
-  is the coordinator that tracks each processing step, retry and failure; and
-  temporary **ECS Fargate** workers perform the decoding and preparation. This
-  combination scales without paying for idle servers.
-- **Athena** queries data directly in S3, while **dbt** gives metric definitions,
-  transformations and quality tests a reviewed, version-controlled home.
-- **Quick Sight** makes dashboards widely accessible and supports an approved
-  plain-language query experience without building a custom application.
+- **Amazon S3 — the durable starting point.** It keeps the original deliveries
+  unchanged as a recoverable audit trail and provides low-cost storage at both
+  pre-launch and production volumes.
+- **Amazon EventBridge — the trigger.** It notices that a new file or scheduled
+  delivery is ready and starts the appropriate workflow. It does not process the
+  data; it ensures work begins reliably.
+- **AWS Step Functions — the workflow coordinator.** It records stages such as
+  validation, transformation and publication, and handles ordering, retries and
+  failure paths so operators can see what happened to a delivery.
+- **ECS Fargate — temporary processing workers.** Fargate runs the project’s
+  decoding and preparation code in short-lived containers, without managing
+  servers. **Decoding** means turning Protocol Buffer bytes into readable fields
+  such as event name, user and timestamp. **Preparation** means checking those
+  fields, standardizing formats and time zones, removing exact duplicates, and
+  writing Parquet files. Workers shut down after a delivery, so there is no
+  idle-compute charge.
+- **AWS Glue Data Catalog — the shared index.** It records where curated tables
+  live and what columns they contain, allowing Athena, dbt and Quick Sight to
+  work from the same definitions.
+- **Athena — the query engine.** It reads curated files in S3 for exploration
+  and for scheduled transformations, without requiring a permanently running
+  database.
+- **dbt on Athena — the governed modelling and test layer.** dbt turns prepared
+  events into consistent business models, applies tests and documents KPI logic.
+  Athena supplies execution; dbt supplies reviewable logic and promotion.
+- **Amazon Quick Sight — the consumption layer.** It presents dashboards and
+  plain-language questions using certified, semantically ready datasets. A
+  business **mart** contains metrics shaped for a decision (such as daily
+  retention); a **fact table** contains approved event or transaction detail for
+  controlled drill-down. Quick Sight may use either, but never raw or quarantined
+  data, so definitions stay consistent and answers trace to governed SQL.
 
 ## 2. Reliable ingestion, data quality and recovery
 
