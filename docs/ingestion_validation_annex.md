@@ -13,6 +13,31 @@ committed scope of, the [architecture proposal](architecture_proposal.md). The
 broader monitoring model is documented in
 [pipeline_monitoring.md](pipeline_monitoring.md).
 
+## Ownership and responsibility
+
+**Source teams own data correctness; the data platform owns contract enforcement
+and safe processing; analytics owns fitness for analytical use.** Detecting and
+containing a source defect does not transfer accountability for correcting it to
+the data team. The platform should preserve evidence, prevent unsafe publication,
+and support replay rather than silently inventing or repairing source semantics.
+
+| Concern or issue | Accountable owner | Platform/data-team responsibility |
+| --- | --- | --- |
+| Schema and Protobuf version | Source owner defines, versions, and publishes the contract | Validate the declared version; reject unsupported data |
+| Required fields and valid values | Source owner produces contract-compliant records | Detect violations and prevent unsafe publication |
+| File completeness and timeliness | Source/export owner supplies finalized files, manifests, counts, and control totals | Verify arrival, checksum, size, counts, and freshness |
+| Event and transaction identifiers | Source owner generates stable identifiers | Enforce idempotency and monitor duplicates defensively |
+| Timestamp and event semantics | Source owner defines meaning, timezone, and valid states | Normalize only by agreed rules; flag ambiguity or violations |
+| Malformed or semantically invalid data | Source owner corrects the producer and resupplies/backfills | Quarantine, alert, retain lineage, and replay corrected delivery |
+| Analytical grain, joins, and eligibility | Analytics/data team | Define facts, dimensions, exclusions, and fitness-for-use tests |
+| KPI definitions and dashboard logic | Analytics/data team with business owners | Govern definitions in dbt and verify published outputs |
+| Safe publication and recovery | Data platform | Block failed versions, retain last-good data, expose freshness, and operate replay |
+
+Contracts, thresholds, backward-compatibility rules, and incident routes should
+be agreed jointly. The source owner remains accountable for remediation; the
+platform owner is accountable for ensuring a violation cannot silently
+contaminate governed outputs.
+
 ## Considered production flow
 
 ```text

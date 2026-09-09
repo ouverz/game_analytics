@@ -53,6 +53,8 @@ version with visible `data_as_of`. CloudWatch and SNS report success, warning,
 failure, stale watermarks, reject-rate drift, dbt/Quick Sight failures, and
 Athena limits. Alerts identify source, partition, `run_id`, owner, and runbook.
 Immutable inputs allow correction and replay of only the affected object.
+The supporting [ingestion and validation annex](ingestion_validation_annex.md)
+defines the source-owner, platform, and analytics responsibility split.
 
 ## 3. Governed reporting, exploration and plain-language access
 
