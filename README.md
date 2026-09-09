@@ -48,8 +48,10 @@ Read the decision-oriented interpretation and recommendations in the
 | --- | --- |
 | Product findings and recommendations | [`docs/stakeholder_brief.md`](docs/stakeholder_brief.md) |
 | Data exploration, quality findings, and ingestion decisions | [`docs/data_exploration_and_ingestion.md`](docs/data_exploration_and_ingestion.md) |
+| Analytical methods, metric definitions, AI use, and verification | [`docs/methods.md`](docs/methods.md) |
 | Scalable AWS data architecture proposal | [`docs/architecture_proposal.md`](docs/architecture_proposal.md) |
 | End-to-end pipeline monitoring and data-quality operations | [`docs/pipeline_monitoring.md`](docs/pipeline_monitoring.md) |
+| Optional dbt, validation, and dashboard developer workflows | [`docs/development_guide.md`](docs/development_guide.md) |
 | Portable Superset dashboard bundle | [`outputs/superset_dashboard.zip`](outputs/superset_dashboard.zip) |
 | Independent aggregate reconciliation | [`outputs/metric_reconciliation.json`](outputs/metric_reconciliation.json) |
 
@@ -197,132 +199,8 @@ docker compose logs superset
 docker compose stop
 ```
 
-## Explore dbt documentation and lineage
-
-dbt Docs does not require Docker. Generate the catalog against the same DuckDB
-database used by Superset, then serve the static documentation on port 8081:
-
-```bash
-# Build catalog.json, manifest.json, and the documentation site.
-uv run dbt docs generate \
-  --project-dir dbt \
-  --profiles-dir dbt \
-  --vars "{analytics_database: 'data/superset_analytics.duckdb'}"
-
-# Keep this process running while browsing the documentation.
-uv run dbt docs serve \
-  --project-dir dbt \
-  --profiles-dir dbt \
-  --port 8081
-```
-
-Open [dbt Docs](http://localhost:8081), select a model, and use the graph control
-to expand its upstream and downstream lineage. The two Superset dashboards are
-declared as dbt exposures named `technical_launch_loading_funnel` and
-`technical_launch_ftue`, so the graph continues through the end-consumer
-boundary.
-
-Run `dbt docs generate` again after changing models, descriptions, tests,
-metrics, or exposures. Port 8081 is intentionally separate from Superset's
-default port 8088.
-
-## How the analytical pipeline works
-
-```text
-events.jsonl + installs.csv + funnel_steps.csv
-                    |
-          Python validation and ingestion
-                    |
-        DuckDB raw + metadata + quarantine
-                    |
-             dbt staging models
-                    |
-     canonical events and ordered session steps
-                    |
-       facts + dimensions + quality models
-                    |
-          governed analytical KPI marts
-              /                 \
-    Superset dashboards     dbt metrics/docs
-```
-
-Important design decisions:
-
-- Raw input files are never modified.
-- Source batches are content-addressed and ingestion is idempotent.
-- User identifiers and timestamps are normalized before joins or metric logic.
-- Required funnel steps are evaluated sequentially within a user session.
-- Optional or conditional outcomes use their own denominators rather than being
-  represented as mandatory funnel stages.
-- Governed metric logic lives in dbt, not in dashboard-specific SQL.
-- Final outputs contain aggregates rather than unnecessary raw user identifiers.
-
-### Governed dashboard marts
-
-| Model | Purpose |
-| --- | --- |
-| `analytics.mart_launch_summary` | Overall loading completion and duration KPIs |
-| `analytics.mart_primary_funnel` | Ordered step counts, conversion, and drop-off |
-| `analytics.mart_branch_outcomes` | Continuation after conditional decisions or failures |
-| `analytics.mart_segment_performance` | Platform and client-version comparisons |
-| `analytics.mart_ftue_summary` | First-session entry, activation, time to battle, and mature-cohort D1 retention |
-
-`funnel_steps.csv` remains the product-owned ordering of the primary journey.
-The analytics-owned semantics in `dbt/seeds/funnel_event_semantics.csv` identify
-which events are milestones, starts, ends, outcomes, failures, platform-specific
-branches, or post-entry diagnostics.
-
-## Metric definitions and boundaries
-
-- **Primary funnel:** session attempts beginning with `INIT_CLIENT_START` and
-  ending with `INIT_GAME_JOINED`. Each required event must occur at or after the
-  preceding step in the same session.
-- **Loading time:** elapsed time from client start to game joined. Twenty-one
-  completed sessions with incoherent source timestamp order are excluded from
-  duration statistics, leaving 556 timing-eligible sessions.
-- **Conditional outcome continuation:** affected sessions with a later
-  `INIT_GAME_JOINED` event in the same session divided by all sessions observing
-  that outcome. Privacy decline and iOS tracking denial are therefore not
-  treated as loading abandonment when the session continues.
-- **First-session activation:** a `BATTLE_STARTED` event after sequential game
-  entry in the player's first eligible session.
-- **D1 retention:** mature installs with an eligible `INIT_CLIENT_START` on the
-  exact next UTC calendar day. Installs whose next day is not fully observable
-  are excluded.
-
-Tutorial completion, battle retries, progression state, authoritative session
-duration, and crash-free onboarding are not reported because the required
-events or fields are absent. D3 and D7 are deferred because the 14-day snapshot
-would leave smaller, unstable mature cohorts.
-
-## Additional validation commands
-
-These commands are useful for investigation but are not required for the normal
-quick-start path:
-
-```bash
-# Demonstrate fail-fast behavior. This is expected to return a non-zero status
-# because events.jsonl contains three malformed rows.
-uv run game-analytics ingest --mode strict
-
-# Validate the resolved Docker Compose configuration without starting services.
-docker compose config
-
-# Optional independent SQL check when the DuckDB CLI is installed.
-duckdb data/superset_analytics.duckdb < sql/reconcile_ftue_kpis.sql
-```
-
-To restore the portable dashboard bundle into an otherwise empty Superset
-metadata store instead of running the Python configurator:
-
-```bash
-docker compose cp outputs/superset_dashboard.zip superset:/tmp/superset_dashboard.zip
-docker compose exec superset sh -lc \
-  'superset import-dashboards --path /tmp/superset_dashboard.zip --username "$SUPERSET_ADMIN_USERNAME"'
-```
-
-Choose either the source-controlled configurator or the import workflow for a
-fresh instance; running both creation paths is unnecessary.
+For dbt Docs and lineage, optional validation commands, and dashboard-bundle
+restoration, see the [development guide](docs/development_guide.md).
 
 ## Troubleshooting
 
@@ -367,59 +245,9 @@ lineage changed.
 ├── tests/                      Python behavior and metric tests
 ├── superset/                   Local Superset image and configuration
 ├── outputs/                    Aggregate and portable dashboard artifacts
-└── docs/                       Findings, data-quality review, and architecture proposal
+└── docs/                       Findings, methods, operations, and architecture
 ```
 
 User-level source data, generated databases, rejected raw payloads, caches,
 local credentials, dbt build artifacts, and local workspace instructions are
 excluded through `.gitignore`.
-
-## AI assistance and independent verification
-
-AI assistance was used to accelerate source profiling, implementation drafts,
-test design, dashboard configuration, documentation editing, and architecture
-review. I worked largely through plan-driven iterations: drafting and revising
-the approach, incorporating system-design considerations, consulting specialist
-agents, and then implementing the agreed plan. Generated suggestions were
-treated as proposals rather than evidence and as starting points for discussion
-and critical review.
-
-I manually reviewed the source files and representative records to develop a
-working understanding of the domain and how the datasets fit together. My
-preferred workflow is to ingest data as supplied, identify quality issues, and
-then clean and transform only what is necessary to support the analysis.
-
-At each major milestone, I reviewed the proposed reasoning and challenged points
-that did not make sense. I asked for alternative validation where appropriate
-and inspected tangible outputs—including analyses, tests, and dashboard
-charts—rather than accepting generated responses at face value. I also prompted
-the AI to critique both my feedback and its own conclusions, ask questions when
-context was unclear, and avoid claims unsupported by the supplied or verified
-information.
-
-The results were independently verified through:
-
-- Python tests for ingestion behavior and metric edge cases;
-- dbt contracts, unit tests, relationship tests, and custom business assertions;
-- a raw-file Pandas reconciliation implemented separately from dbt;
-- a direct SQL cross-check for FTUE numerators and timing statistics; and
-- live execution of all 12 Superset chart queries against the governed marts.
-
-The definition of the mandatory loading funnel—and the decision to keep patch,
-privacy, and Apple tracking outcomes on conditional denominators—was deliberately
-retained as an analyst-owned product judgment. Event order alone cannot determine
-whether a prompt is universally required, platform-specific, recoverable, or
-post-entry; automating that choice would risk producing a visually plausible but
-conceptually incorrect funnel.
-
-## Part 2: architecture proposal
-
-Part 2 is intentionally a design document rather than an implementation. It
-proposes a low-cost AWS serverless data lake for pre-launch, separates governed
-reporting from exploratory analytics, provides a distinct 15–20 minute payments
-path, and identifies measured triggers for adopting Glue Spark, Iceberg, or
-Redshift Serverless as volume approaches 1 TB/day.
-
-See [`docs/architecture_proposal.md`](docs/architecture_proposal.md) for the
-end-to-end diagram, governance model, quality controls, concurrency strategy,
-cost drivers, and deliberately deferred scope.
