@@ -48,8 +48,8 @@ Read the decision-oriented interpretation and recommendations in the
 | --- | --- |
 | Product findings and recommendations | [`docs/stakeholder_brief.md`](docs/stakeholder_brief.md) |
 | Data exploration, preparation, and observed quality findings | [`docs/data_exploration_and_preparation.md`](docs/data_exploration_and_preparation.md) |
-| AI assistance, independent verification, and retained human judgement | [`docs/methods.md`](docs/methods.md) |
 | Scalable AWS data architecture proposal | [`docs/architecture_proposal.md`](docs/architecture_proposal.md) |
+| AI assistance, independent verification, and retained human judgement | [`docs/methods.md`](docs/methods.md) |
 | Portable Superset dashboard bundle | [`outputs/superset_dashboard.zip`](outputs/superset_dashboard.zip) |
 
 ## Technology choices
@@ -67,13 +67,37 @@ No cloud account, external database, or API credentials are required.
 
 ### Prerequisites
 
-- [uv](https://docs.astral.sh/uv/)
-- Python 3.12, which `uv` can install automatically when needed
-- Docker Desktop with Docker Compose, only for the interactive dashboards
-- The supplied `events.jsonl`, `funnel_steps.csv`, and `installs.csv` files in
-  the repository root
+The following tools support different parts of the reproduction. You do not
+need an AWS account or a separate database.
+
+| Requirement | What it provides | When it is needed |
+| --- | --- | --- |
+| [Git](https://git-scm.com/downloads) | Downloads the project and keeps the files in sync with the repository | To obtain the code |
+| [uv](https://docs.astral.sh/uv/) | Creates the isolated Python environment and installs the locked dependencies | Tests, ingestion, dbt and reconciliation |
+| Python 3.12 | Runs the analysis and ingestion code | `uv` can install it for you |
+| [Docker Desktop](https://docs.docker.com/desktop/) | Runs the local Superset dashboard service and its metadata database | Only if you want interactive dashboards |
+| Supplied source files | Provide the telemetry and attribution that the analysis processes | The reproducible build |
+
+If a tool is missing, install it before continuing:
+
+- **Git:** use the installer on the [Git downloads page](https://git-scm.com/downloads). On macOS, `xcode-select --install` also installs Git; on Ubuntu/Debian, run `sudo apt update && sudo apt install git`.
+- **uv (macOS/Linux):** run `curl -LsSf https://astral.sh/uv/install.sh | sh`. On Windows PowerShell, run `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`. Restart the terminal afterwards and check with `uv --version`.
+- **Python:** after uv is installed, run `uv python install 3.12` if Python 3.12 is not already available. Check with `uv python list`.
+- **Docker:** install Docker Desktop from the [official guide](https://docs.docker.com/desktop/), open it, and wait until it reports that Docker is running. Docker Compose is included with Docker Desktop.
+
+### 0. Get the project
+
+If you have not already cloned the repository:
+
+```bash
+git clone https://github.com/ouverz/game_analytics.git
+cd game_analytics
+```
 
 Run all commands from the repository root.
+
+The commands below use macOS/Linux or Git Bash syntax. Windows users can run
+them in Git Bash, or replace `cp` with the equivalent PowerShell copy command.
 
 > **Data note:** `events.jsonl` and `installs.csv` contain user-level assignment
 > data and are intentionally excluded from source control. Obtain the original

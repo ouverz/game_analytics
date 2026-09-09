@@ -64,12 +64,13 @@ The main choices and reasons are:
 ## 2. Reliable ingestion, data quality and recovery
 
 The platform takes responsibility once source data lands in S3. Each delivery
-is registered with its source, checksum, processing version and publication
-state, so retries cannot count the same file twice. The wire log is decoded from
-Protocol Buffers; AppsFlyer supplies attribution, Firebase app/crash exports,
-and Payment Hub revenue. Records are checked, standardized and written as
-Parquet. Apache Iceberg is reserved for payments, where refunds and corrections
-require reliable updates.
+gets a deterministic run ID based on its source, path and checksum; an S3
+manifest and Step Functions execution record its processing and publication
+state. This is sufficient to make retries safe without a separate database at
+the initial scale. The wire log is decoded from Protocol Buffers; AppsFlyer
+supplies attribution, Firebase app/crash exports, and Payment Hub revenue.
+Records are checked, standardized and written as Parquet. Apache Iceberg is
+reserved for payments, where refunds and corrections require reliable updates.
 
 Quality is checked throughout: Was the file delivered? Can it be decoded? Are
 required fields present? Do counts reconcile? Are business rules and freshness
@@ -79,8 +80,8 @@ Only a passing dataset becomes the new certified version. If a run fails,
 stakeholders continue to see the last successful version together with a clear
 `data as of` time. CloudWatch and SNS report successful publication and alert on
 late files, failed checks or stale dashboards. Original files allow the affected
-delivery to be corrected and replayed. A DynamoDB ledger provides audit history
-and prevents duplicate work. The [ingestion and validation annex](ingestion_validation_annex.md)
+delivery to be corrected and replayed. S3 manifests, versioned output prefixes
+and workflow history provide the audit trail. The [ingestion and validation annex](ingestion_validation_annex.md)
 clarifies ownership.
 
 ## 3. Governed reporting, exploration and plain-language access
@@ -122,8 +123,9 @@ The daily workflow later reconciles late bookings, refunds and corrections
 before revenue is certified. If there is no separate daily file, the accumulated
 15-minute deliveries are reconciled and certified by that workflow. Amazon SQS
 holds work safely during short disruptions; repeatedly failed items move to its
-dead-letter queue. The daily quality checks, audit history and alerts still
-apply.
+dead-letter queue. A FIFO/order-by-delivery policy and transaction IDs in the
+Iceberg `MERGE` prevent overlapping deliveries from creating duplicate payments.
+The daily quality checks, audit history and alerts still apply.
 
 ## 5. Cost, scaling and deliberate scope
 
@@ -135,7 +137,9 @@ Change only on evidence: move decoding and file maintenance to Glue Spark when
 jobs miss their window or hit memory limits; reserve Athena capacity for queues;
 and use Redshift Serverless when repeated latency or three-month Athena cost is
 worse than the warehouse alternative. Move live payments first if they miss 20
-minutes.
+minutes. Add a DynamoDB control ledger later if concurrent retries, backfills or
+the need for searchable long-term run history make S3 manifests and workflow
+history cumbersome.
 
 Initially, build the shared S3 foundation, reliable processing, two analytics
 tiers, certified KPI dashboards, controlled natural-language access and the
