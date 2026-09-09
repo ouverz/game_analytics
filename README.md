@@ -47,7 +47,8 @@ Read the decision-oriented interpretation and recommendations in the
 | Deliverable | Location |
 | --- | --- |
 | Product findings and recommendations | [`docs/stakeholder_brief.md`](docs/stakeholder_brief.md) |
-| Data exploration, quality findings, and ingestion decisions | [`docs/data_exploration_and_ingestion.md`](docs/data_exploration_and_ingestion.md) |
+| Data exploration, preparation, and observed quality findings | [`docs/data_exploration_and_preparation.md`](docs/data_exploration_and_preparation.md) |
+| Optional production ingestion and validation considerations | [`docs/ingestion_validation_annex.md`](docs/ingestion_validation_annex.md) |
 | AI assistance, independent verification, and retained human judgement | [`docs/methods.md`](docs/methods.md) |
 | Analytical workflow, metric definitions, and governed models | [`docs/analytical_methodology.md`](docs/analytical_methodology.md) |
 | Scalable AWS data architecture proposal | [`docs/architecture_proposal.md`](docs/architecture_proposal.md) |

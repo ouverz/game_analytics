@@ -5,7 +5,7 @@
 This document explains how telemetry is converted into governed metrics and
 records the principal analytical definitions. Detailed source profiling and
 issue-handling decisions are documented in
-[data_exploration_and_ingestion.md](data_exploration_and_ingestion.md). The use
+[data_exploration_and_preparation.md](data_exploration_and_preparation.md). The use
 of AI and independent verification are documented separately in
 [methods.md](methods.md).
 
