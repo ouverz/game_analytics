@@ -47,7 +47,9 @@ Read the decision-oriented interpretation and recommendations in the
 | Deliverable | Location |
 | --- | --- |
 | Product findings and recommendations | [`docs/stakeholder_brief.md`](docs/stakeholder_brief.md) |
+| Data exploration, quality findings, and ingestion decisions | [`docs/data_exploration_and_ingestion.md`](docs/data_exploration_and_ingestion.md) |
 | Scalable AWS data architecture proposal | [`docs/architecture_proposal.md`](docs/architecture_proposal.md) |
+| End-to-end pipeline monitoring and data-quality operations | [`docs/pipeline_monitoring.md`](docs/pipeline_monitoring.md) |
 | Portable Superset dashboard bundle | [`outputs/superset_dashboard.zip`](outputs/superset_dashboard.zip) |
 | Independent aggregate reconciliation | [`outputs/metric_reconciliation.json`](outputs/metric_reconciliation.json) |
 
@@ -365,7 +367,7 @@ lineage changed.
 ├── tests/                      Python behavior and metric tests
 ├── superset/                   Local Superset image and configuration
 ├── outputs/                    Aggregate and portable dashboard artifacts
-└── docs/                       Stakeholder brief and architecture proposal
+└── docs/                       Findings, data-quality review, and architecture proposal
 ```
 
 User-level source data, generated databases, rejected raw payloads, caches,
