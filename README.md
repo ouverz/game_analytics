@@ -48,8 +48,8 @@ Read the decision-oriented interpretation and recommendations in the
 | --- | --- |
 | Product findings and recommendations | [`docs/stakeholder_brief.md`](docs/stakeholder_brief.md) |
 | Data exploration, preparation, and observed quality findings | [`docs/data_exploration_and_preparation.md`](docs/data_exploration_and_preparation.md) |
-| AI assistance, independent verification, and retained human judgement | [`docs/methods.md`](docs/methods.md) |
 | Scalable AWS data architecture proposal | [`docs/architecture_proposal.md`](docs/architecture_proposal.md) |
+| AI assistance, independent verification, and retained human judgement | [`docs/methods.md`](docs/methods.md) |
 | Portable Superset dashboard bundle | [`outputs/superset_dashboard.zip`](outputs/superset_dashboard.zip) |
 
 ## Technology choices
