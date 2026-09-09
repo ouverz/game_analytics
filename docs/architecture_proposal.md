@@ -1,136 +1,119 @@
-# Part 2: Scalable Game Analytics Architecture
+# Part 2 — Data Architecture Proposal
 
-## Recommendation and end-to-end design
+## 1. Recommendation and diagram
 
-Start with an AWS serverless lake: pre-launch traffic and daily reporting do not
-justify an always-on warehouse. Keep raw data replayable and serving contracts
-stable; change compute only when measured job time, query latency, concurrency,
-or cost breaches an agreed service level.
+Build a **zero-idle governed lakehouse** on AWS. Source files remain immutable
+in S3; short-lived containers decode and validate them; Athena and dbt create
+certified metrics; and Quick Sight serves the company. A separate payment path
+prioritizes 15-minute freshness. The design starts cheaply and changes compute
+only when measured volume, latency, concurrency, or cost requires it.
 
 ```mermaid
 flowchart LR
-  S[Wire log · Payment Hub<br/>AppsFlyer · Firebase export]
-  R[(S3 raw<br/>encrypted + immutable)]
-  O[EventBridge + Step Functions]
-  T[ECS Fargate fan-out<br/>decode + validate]
-  C[(S3 curated<br/>Parquet + selected Iceberg<br/>Glue Catalog)]
-  X[(S3 quarantine)]
-  E[Athena exploratory<br/>workgroup]
-  D[dbt on Athena<br/>tests + promotion]
-  M[(Certified KPI marts)]
-  Q[Quick Sight SPICE<br/>dashboards + Quick chat]
-  P[15-min payment path<br/>SQS + ledger + Iceberg fact]
-
-  S --> R --> O --> T
-  T --> C
-  T -->|invalid| X
-  C --> E
-  C --> D --> M --> Q
-  R -. Payment Hub arrival .-> P -->|provisional| Q
-  P -->|daily reconcile| D
+    S[Wire log · Payment Hub<br/>AppsFlyer · Firebase] --> R[(S3 immutable raw)]
+    R --> O[EventBridge + Step Functions]
+    O --> F[ECS Fargate fan-out<br/>decode + validate]
+    F -->|invalid rows| Q[(Restricted quarantine)]
+    F --> C[(Curated Parquet<br/>selected Iceberg + Glue)]
+    C --> D[dbt on Athena<br/>tests + promotion]
+    D --> G[(Certified KPI marts)]
+    G --> K[Quick Sight SPICE<br/>daily dashboards + chat]
+    C --> E[Athena exploratory<br/>workgroup]
+    R -->|Payment Hub every 15 min| P[Validate + Iceberg upsert]
+    P -->|provisional| L[Quick Sight direct query]
+    P -->|daily reconcile/certify| D
+    M[DynamoDB run ledger<br/>CloudWatch + SNS] --- O
+    M --- P
 ```
 
-All sources land in source/date/hour S3 prefixes; a scheduled job extracts the
-Firebase/BigQuery export to Parquet and copies it into the same contract. S3
-versioning, KMS encryption, lifecycle rules, and IAM/Lake Formation protect the
-originals. EventBridge starts Step Functions; a Distributed Map fans out bounded
-file batches to ephemeral Fargate tasks. Each task uses version-controlled
-Protobuf descriptors to decode, validate, normalize UTC timestamps/IDs,
-deduplicate, and write partitioned Parquet; bad records enter restricted
-quarantine with reason codes. This is horizontal file-level scaling, not one
-container processing 1 TB/day.
+## 2. Ingestion, publication and recovery
 
-Glue Catalog exposes curated data to Athena. Append-only events start as simple
-Parquet; selected mutable facts use Iceberg when corrections, deletes, atomic
-publication, or partition evolution justify its compaction and snapshot
-maintenance. A second Fargate task runs dbt Core on Athena, producing conformed
-facts and small KPI marts. A manifest records checksums, row/reject counts,
-schema/code versions, Iceberg snapshot where applicable, and `run_id`; reruns
-are idempotent. Certified views advance only after blocking tests pass. Otherwise
-users retain the last good version with visible `data_as_of` and freshness.
+Sources land under `source/date/hour` S3 prefixes. Wire logs retain their
+Protobuf bytes and schema version for historical decoding. AppsFlyer becomes
+install/campaign dimensions, late attribution reprocesses affected dates, and a
+scheduled extraction copies Firebase/BigQuery exports to S3. Payment Hub feeds
+both live and daily workflows.
 
-## Two analytical tiers and concurrency
+EventBridge starts Step Functions; Distributed Map sends bounded batches to
+ephemeral Fargate tasks rather than one container processing 1 TB/day. Tasks
+validate fields, normalize UTC timestamps/IDs, deduplicate, and write partitioned
+Parquet. Iceberg is reserved for facts requiring corrections, deletes, atomic
+updates, or partition evolution. A DynamoDB ledger keyed by source, checksum,
+and processing version makes retries idempotent; Terraform and CI/CD version the
+platform.
 
-| Tier | Intended use | Guarantee and access |
-| --- | --- | --- |
-| **Governed reporting** | Company KPIs, dashboards, and plain-language answers | Reviewed dbt definitions, daily freshness SLO, tests, lineage, ownership, and controlled promotion. Quick Sight imports only certified marts into SPICE and is shared through SSO and row-level security. |
-| **Exploratory analytics** | Event investigation, fraud/exploit discovery, and prototyping | Athena reads curated events in a separate IAM workgroup. Data is schema-conformant but best-effort, with no KPI certification. Results become official only through dbt review, tests, and promotion. |
+Arrival checks detect missing, late, duplicate, empty, or checksum-mismatched
+files. Decode checks reject unknown Protobuf versions and quarantine malformed
+records with reason codes. dbt tests required fields, uniqueness, relationships,
+grain, freshness, business logic, and source-to-mart reconciliation. A manifest
+records counts, code/schema versions, `run_id`, and applicable Iceberg snapshot.
 
-Both tiers reuse one landing zone, catalog, and pipeline—never one per analyst.
-SPICE absorbs dashboard concurrency without rescanning S3. The exploratory
-Athena workgroup has scan limits, budgets, timeouts, and CloudWatch metrics, so
-ad-hoc work cannot delay reporting. If queues breach the SLO, reserve Athena
-capacity first; use Redshift Serverless only if sustained concurrency or joins
-still fail it.
+Only a passing version advances certified views; failure retains the last good
+version with visible `data_as_of`. CloudWatch and SNS report success, warning,
+failure, stale watermarks, reject-rate drift, dbt/Quick Sight failures, and
+Athena limits. Alerts identify source, partition, `run_id`, owner, and runbook.
+Immutable inputs allow correction and replay of only the affected object.
 
-## Governed plain-language queries
+## 3. Governed reporting, exploration and plain-language access
 
-Use Amazon Quick Sight Topics with Amazon Quick chat, not a custom LLM service. Product
-and Revenue Topics expose only certified marts and define approved terms,
-joins, time semantics, aggregations, and non-additive rates. Existing permissions
-and row-level security apply; the assistant cannot access raw/quarantine data,
-write back, or redefine metrics.
+The **governed tier** contains reviewed dbt definitions and certified daily KPI
+marts. Quick Sight imports them into SPICE, giving concurrent readers fast,
+shareable dashboards without rescanning S3. IAM Identity Center, Lake Formation,
+encryption, pseudonymous IDs, row-level security, and dataset permissions protect
+data. Metric logic remains in dbt, not charts.
 
-Each numerical answer's Explanation shows dataset, filters, assumptions,
-calculation, and generated SQL. Ambiguity triggers clarification. Owners maintain
-verified common answers and a 15–20-question regression suite. CloudTrail/chat
-logs audit identity and interaction; direct Athena queries also retain query IDs
-and history. The displayed SQL remains the trace for SPICE-backed answers.
+The **exploratory tier** exposes curated events through a separate Athena
+workgroup for fraud, exploit, and ad-hoc analysis. It is schema-conformant but
+best effort, with scan limits, timeouts, and budget alarms. Results become
+official only after dbt review, testing, and promotion. Both tiers share S3 and
+Glue; sustained queues can receive reserved Athena capacity without duplicate
+data or pipelines.
 
-## Live payments versus daily reporting
+Quick Sight Topics with Quick chat expose only certified marts and approved
+terms, joins, time semantics, and rates. Existing permissions apply; chat cannot
+read raw/quarantine data, write, or redefine metrics. Answers show definition,
+denominator, freshness, and generated SQL. Ambiguity triggers clarification, and
+common questions are regression-tested against canonical answers.
 
-A daily batch cannot meet 15–20 minutes, so Payment Hub's 15-minute S3 delivery
-gets a narrow path. S3 arrival publishes through EventBridge to SQS with a
-dead-letter queue. An idempotent micro-batch task validates schema,
-amount/currency and records checksum plus transaction version in DynamoDB, then
-uses Athena `MERGE INTO` to update a compact Iceberg payment fact. A narrow
-Quick Sight direct-query aggregate is labelled **provisional** and displays
-event/ingestion watermarks and stale-file alerts.
+## 4. Live payments
 
-Daily processing remains authoritative: reload the partition, resolve late
-changes, reconcile purchases/refunds/bookings to provider control totals, then
-promote certified revenue through dbt. The fast path optimizes freshness and may
-revise; daily optimizes completeness and correctness. If Iceberg merges or
-direct queries breach the latency SLO, move only this fact/aggregate to Redshift
-Serverless.
+Each 15-minute Payment Hub arrival passes through EventBridge and SQS with a
+dead-letter queue. An idempotent micro-batch validates transaction fields,
+records checksum/version in DynamoDB, and uses Athena `MERGE INTO` to update an
+Iceberg payment fact. Quick Sight direct query avoids the daily SPICE wait; the
+dashboard labels results **provisional** and shows event/ingestion watermarks.
 
-## Data quality and operations
+The 15-minute deliveries provide the provisional operational view. When a daily
+delivery is available, it reconciles late bookings, refunds, and corrections
+before certified revenue is promoted. Otherwise, the accumulated Payment Hub
+deliveries remain the source of truth and are reconciled and certified through
+the scheduled daily workflow. Arrival, validation, publication, and dashboard
+latency are monitored separately. Repeated 15–20-minute SLA breaches move only
+this fact and aggregate to Redshift Serverless.
 
-Arrival controls detect missing, late, duplicate, empty, or checksum-mismatched
-files. Decode controls reject unknown Protobuf versions and quarantine malformed
-records. Curated/dbt checks cover types, required fields, timestamp order,
-deduplication, grain, relationships, freshness, funnel/retention logic, and
-source-to-mart reconciliation. Payment publication also requires unique versions,
-valid currency/amount, linked refunds, and exact provider control totals.
+## 5. Cost, scaling triggers and deliberate exclusions
 
-CloudWatch alerts via SNS/PagerDuty on those failures, reject-rate drift, stale
-watermarks, Quick Sight refreshes, and Athena limits. Each alert carries source,
-partition, `run_id`, owner, and runbook. Bad partitions remain quarantined;
-consumers see last-good data and a staleness warning during idempotent backfill.
+Pre-launch costs are S3 storage and requests, Athena bytes scanned, Quick Sight
+licensing/SPICE, and brief Fargate and Step Functions runs; there is no idle
+warehouse. Columnar files, partition pruning, compaction, lifecycle tiering,
+cached marts, and Athena workgroup limits control spend. At approximately
+1 TB/day, retained raw data, distributed decoding, wide scans and backfills,
+small-file maintenance, and direct-query concurrency become the main drivers.
 
-## Cost, evolution triggers, and deliberate scope
+Change the architecture only on evidence:
 
-Pre-launch cost is S3 storage/requests, short Fargate runs, Athena bytes scanned,
-SPICE, and licences. Parquet compression, partition pruning, compaction,
-lifecycle tiering, workgroup limits, and cached marts control it. At 1 TB/day,
-retained raw data, distributed decoding, wide scans/backfills, and direct-query
-concurrency dominate.
-
-Evolution is evidence-led:
-
-- Replace Fargate decoding with hourly Glue Spark if p95 processing exceeds its
-  input window, memory limits are reached, or two partitions remain backlogged.
-- Add Iceberg only where corrections, deletes, schema/partition evolution, or
-  cross-partition backfills make append-only Parquet operationally fragile.
+- Move decoding and compaction to hourly Glue Spark when p95 processing exceeds
+  its input window, memory limits are reached, or two partitions remain queued.
+- Expand Iceberg only when corrections, deletes, schema/partition evolution,
+  concurrent writers, or cross-partition replay make Parquet fragile.
 - Reserve Athena capacity for sustained queues; adopt Redshift Serverless when
-  tuned direct queries repeatedly miss the agreed p95 latency or three-month
-  Athena spend approaches the modelled warehouse cost.
-- Move live payments first if p95 end-to-end freshness exceeds 15 minutes or
-  any normal operating period breaches the 20-minute commitment.
+  optimized queries repeatedly miss the agreed p95 latency or three-month
+  Athena spend approaches the modeled warehouse cost.
+- Move live payments first when p95 end-to-end freshness exceeds 15 minutes or
+  normal operation breaches the 20-minute commitment.
 
-Initially do **not** build gameplay streaming/Kinesis, a raw-event warehouse,
-universal Iceberg, custom AI, ML/fraud systems, multi-cloud, or multi-region DR.
-Daily gameplay KPIs and a 15-minute payment micro-batch meet the need; the rest
-adds cost before evidence justifies it. IaC and CI/CD, separate dev/prod roles,
-KMS encryption, pseudonymized player IDs, restricted quarantine, retention and
-deletion policies, ownership, and runbooks remain the minimum safe foundation.
+Do not initially build gameplay streaming with Kafka/Kinesis, duplicate lakes,
+an always-on warehouse, universal Iceberg, a custom AI service, ML/feature
+stores, multi-cloud, or multi-region disaster recovery. They add cost and
+failure modes without improving the required daily KPIs, exploration, or
+15-minute payment view enough to justify them.

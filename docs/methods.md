@@ -1,59 +1,87 @@
-# AI Assistance and Independent Verification
+# Methods: Use of AI
 
 ## How I used AI
 
-I used AI throughout the project to accelerate development and as a technical
-sparring partner. It supported the work, but I remained responsible for the
-analytical definitions, design choices, and verification of the results.
+I used AI throughout the project to accelerate planning, implementation,
+testing, analysis, and documentation. I treated it as a technical sparring
+partner rather than an autonomous decision-maker.
 
-Planning was a critical first step. I provided the assignment brief and project
-context, asked AI to propose a structured delivery plan, and then challenged and
-revised that plan before implementation. Throughout the project, I asked it to
-critique my assumptions and proposed design decisions rather than simply agree
-with them. I also instructed it to ask questions when something was unclear,
-base its recommendations on the available project evidence, and explicitly say
-when it lacked the information needed to reach a supported conclusion.
+AI helped implement:
 
-AI assistance was used in the following areas:
+- Python ingestion, normalization, and quarantine handling for the supplied
+  sources;
+- dbt configuration, models, contracts, tests, metrics, and lineage;
+- Superset deployment, API configuration, datasets, charts, and dashboards;
+- data profiling, reconciliation, and investigation of quality issues; and
+- the stakeholder brief, README, technical documentation, and architecture
+  proposal.
 
-- Developing the Python validation and ingestion workflow for the supplied
-  JSONL and CSV sources, including quarantine and idempotency behavior.
-- Configuring dbt, drafting models, and designing data tests, unit tests, data
-  contracts, documentation, and lineage.
-- Configuring Superset and creating datasets, charts, dashboard layouts, and a
-  shared visual theme through its API.
-- Profiling the source data, investigating anomalies, and proposing validation
-  and reconciliation checks.
-- Drafting and refining project documentation, stakeholder explanations, and
-  the data architecture proposal.
+## What I explicitly proposed or decided
 
-Generated code and recommendations were treated as drafts to inspect and test,
-not as evidence that the implementation was correct.
+I recommended Python with DuckDB and dbt as the core local analytical workflow,
+and selected Superset instead of Streamlit as the visualization layer. AI then
+helped configure and implement that stack.
 
-## What I verified independently
+I supplied the assignment brief and asked AI to develop an initial plan, explain
+its assumptions, ask questions when information was missing, and challenge my
+ideas when appropriate. I retained control over priorities, scope, analytical
+framing, and the form of the final deliverables.
 
-I manually reviewed the supplied files and representative records to understand
-the domain, event structure, and relationships between sources. I then verified
-the implementation and results through:
+## How I challenged or redirected AI
 
-- Python tests covering parsing, ingestion behavior, and metric edge cases.
-- dbt contracts, unit tests, relationship tests, and custom business assertions.
-- A raw-file reconciliation in `src/reconcile_metrics.py`, implemented
-  independently of the dbt marts.
-- A direct SQL cross-check of FTUE numerators and timing statistics.
-- Live execution of all 12 Superset chart queries against the governed marts and
-  visual inspection of the resulting dashboards.
+I redirected the work when it became too complex or moved beyond the assignment.
+I stopped an increasingly extensive implementation and required the work to
+focus first on a reproducible minimum viable Part 1 submission, followed by the
+Part 2 proposal. Further engineering was deferred unless needed for that result.
 
-The separate reconciliation was important because validating dbt logic with a
-second query built from the same assumptions would not be a meaningful
-independent check.
+I also challenged unclear or weak conclusions, including:
 
-## A decision I did not delegate to AI
+- why D1 retention was included in the FTUE analysis;
+- how conditional outcomes differed from mandatory funnel steps;
+- whether dbt lineage represented a genuine raw-to-mart dependency chain;
+- whether the architecture remained practical at different traffic levels; and
+- whether the proposed architecture satisfied every requirement in the brief.
 
-I retained ownership of the mandatory loading-funnel definition and the
-decision to report patch, privacy, and Apple tracking outcomes using conditional
-denominators. Event order alone cannot establish whether a prompt is universally
-required, platform-specific, recoverable, or post-entry. Delegating that
-semantic decision could have produced a visually plausible but conceptually
-incorrect funnel, so I made the final classification using the event context,
-observed session behavior, and the assignment's product objective.
+## What I reviewed independently
+
+I reviewed the outputs rather than accepting generated results at face value. I
+identified that the primary Superset funnel displayed its steps in the wrong
+order and inspected its underlying query, which lacked the required ordering. I
+also reviewed dashboard screenshots, questioned redundant tables and unclear
+labels, and requested clearer conversion visuals.
+
+I questioned whether retention belonged in the loading-funnel analysis and
+decided that technical loading and FTUE should be presented as separate
+dashboards. I then required both dashboards to use consistent layout,
+typography, terminology, and colors.
+
+I repeatedly reviewed the documentation and architecture, removing content that
+was excessive, outside scope, or incorrectly presented supporting artifacts as
+core deliverables.
+
+## How technical results were validated
+
+AI executed the automated validation, including Python tests, dbt tests and
+contracts, source-to-mart reconciliation, direct SQL checks, Superset chart
+queries, and clean-environment reproduction checks. I reviewed the reported
+outcomes and requested further investigation when results, lineage, dashboard
+behavior, or explanations were unclear. I do not claim to have independently
+reimplemented or manually executed every validation.
+
+## Decisions I did not leave to AI
+
+I retained final responsibility for product scope and analytical presentation.
+The principal decisions I did not leave to AI were:
+
+- selecting Python, DuckDB, dbt, and Superset as the main local components;
+- prioritizing a reproducible minimum viable submission over further
+  engineering;
+- treating `funnel_steps.csv` as the product-owned journey mapping and requiring
+  governed metrics to be defined once rather than recalculated in dashboards;
+- separating technical loading performance from FTUE and retention;
+- requiring consistent visual design across the two dashboards; and
+- keeping the architecture practical, maintainable, and limited to the brief.
+
+These decisions required product judgement, awareness of the assignment's time
+constraint, and consideration of how stakeholders would interpret the final
+deliverables.
